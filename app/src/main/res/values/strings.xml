@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Dictaphone</string>
+    <string name="startRecording">Start Recording</string>
+    <string name="stopRecording">Stop Recording</string>
+    <string name="startPlaying">Start Playing</string>
+    <string name="stopPlaying">Stop Playing</string>
+</resources>
