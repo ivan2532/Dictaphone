@@ -7,6 +7,10 @@ import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import org.w3c.dom.Text
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileReader
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -14,6 +18,9 @@ class PlayerActivity : AppCompatActivity() {
 
     private val titleTextView: TextView by lazy {
         findViewById(R.id.title)
+    }
+    private val descriptionTextView: TextView by lazy {
+        findViewById(R.id.description)
     }
     private val currentTimeTextView: TextView by lazy {
         findViewById(R.id.current_time)
@@ -51,13 +58,30 @@ class PlayerActivity : AppCompatActivity() {
 
         titleTextView.isSelected = true
         titleTextView.text = recordName;
-        totalTimeTextView.text = convertToMMSS(mediaPlayer.duration)
+
+        val descriptionFile = File(applicationContext.filesDir.toString() + '/' + recordName + ".txt")
+        if(descriptionFile.exists()) {
+            val fileReader = FileReader(descriptionFile)
+            val bufferedReader = BufferedReader(fileReader)
+            val stringBuilder = StringBuilder()
+            var line: String?
+            while (bufferedReader.readLine().also { line = it } != null) {
+                stringBuilder.append(line)
+            }
+            val text = stringBuilder.toString()
+            bufferedReader.close()
+
+            descriptionTextView.text = text;
+        } else {
+            descriptionTextView.text = "There is no description."
+        }
 
         pausePlayButton.setOnClickListener { pausePlay() }
         seekForwardButton.setOnClickListener { seekForward() }
         seekBackwardButton.setOnClickListener { seekBackward() }
 
         playMusic()
+        totalTimeTextView.text = convertToMMSS(mediaPlayer.duration)
 
         runOnUiThread(
             object : Runnable {

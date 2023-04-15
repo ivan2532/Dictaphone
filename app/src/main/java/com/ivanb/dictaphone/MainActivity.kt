@@ -3,15 +3,12 @@ package com.ivanb.dictaphone
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.ivanb.dictaphone.playback.AndroidAudioPlayer
-import com.ivanb.dictaphone.record.AndroidAudioRecorded
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
@@ -20,14 +17,6 @@ class MainActivity : AppCompatActivity() {
 
     private var recordModels:MutableList<RecordModel> = ArrayList()
 
-    private val recorder by lazy {
-        AndroidAudioRecorded(applicationContext)
-    }
-
-    private val player by lazy {
-        AndroidAudioPlayer(applicationContext)
-    }
-
     private val recyclerView: RecyclerView by lazy {
         findViewById(R.id.recordingsRecyclerView)
     }
@@ -35,7 +24,9 @@ class MainActivity : AppCompatActivity() {
         RecordRecyclerViewAdapter(this, recordModels)
     }
 
-    private var audioFile: File? = null
+    private val comparator = Comparator<RecordModel> { recordModel1, recordModel2 ->
+        recordModel2.creationTime.compareTo(recordModel1.creationTime)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,29 +48,12 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, RecordActivity::class.java)
             startActivityForResult(intent, 1)
         }
-    }
 
-    fun startRecording(view: View) {
-
-        File(cacheDir, "audio.mp3").also {
-            recorder.start(it)
-            audioFile = it
+        val codebookButton: Button = findViewById(R.id.codebook_button)
+        codebookButton.setOnClickListener { view ->
+            val intent = Intent(this, CodebookActivity::class.java)
+            startActivity(intent)
         }
-    }
-
-    fun stopRecording(view: View) {
-
-        File(cacheDir, "audio.mp3").also {
-            recorder.stop()
-        }
-    }
-
-    fun playAudio(view: View) {
-        player.playFile(audioFile ?: return)
-    }
-
-    fun stopAudio(view: View) {
-        player.stop()
     }
 
     private fun setUpRecordModels() {
@@ -89,11 +63,10 @@ class MainActivity : AppCompatActivity() {
         val directory = File(path)
         val files = directory.listFiles { file -> file.extension == "mp3" } ?: return
 
-        val test = "prvi.mp3".replaceFirst("[.][^.]+$", "")
-
         recordModels =  files.map {
-            RecordModel(it.nameWithoutExtension, Files.readAttributes(it.toPath(), BasicFileAttributes::class.java).creationTime(), it.path)
+            RecordModel(it.nameWithoutExtension.substringBefore('-'), Files.readAttributes(it.toPath(), BasicFileAttributes::class.java).creationTime(), it.path)
         }.toMutableList()
+        recordModels.sortWith(comparator)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -103,8 +76,12 @@ class MainActivity : AppCompatActivity() {
 
             val audioFilePath = data?.getStringExtra("filePath")
             val newFile = File(audioFilePath)
-            recordModels.add(RecordModel(newFile.nameWithoutExtension, Files.readAttributes(newFile.toPath(), BasicFileAttributes::class.java).creationTime(), newFile.path))
-            adapter.notifyItemInserted(recordModels.size - 1)
+
+            val fileName = newFile.nameWithoutExtension.substringBefore('-')
+
+            recordModels.add(RecordModel(fileName, Files.readAttributes(newFile.toPath(), BasicFileAttributes::class.java).creationTime(), newFile.path))
+            recordModels.sortWith(comparator)
+            adapter.notifyItemInserted(recordModels.indexOfFirst { it.path == newFile.path })
         }
     }
 }

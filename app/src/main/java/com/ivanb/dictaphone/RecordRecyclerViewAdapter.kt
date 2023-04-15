@@ -51,6 +51,7 @@ class RecordRecyclerViewAdapter(
                 "YES"
             ) { dialog, _ ->
                 File(currentRecord.path).delete()
+                File(currentRecord.path.substring(0, currentRecord.path.length - 3) + "txt").delete()
                 recordModels.removeAt(position)
                 notifyItemRemoved(position)
                 notifyItemRangeChanged(position, recordModels.size)
