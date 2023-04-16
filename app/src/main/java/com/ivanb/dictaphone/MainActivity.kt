@@ -3,8 +3,8 @@ package com.ivanb.dictaphone
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.ImageView
+import android.view.View
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -13,15 +13,21 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 
+
 class MainActivity : AppCompatActivity() {
 
     private var recordModels:MutableList<RecordModel> = ArrayList()
+    private var filteredItems:MutableList<RecordModel> = ArrayList()
 
     private val recyclerView: RecyclerView by lazy {
         findViewById(R.id.recordingsRecyclerView)
     }
     private val adapter: RecordRecyclerViewAdapter by lazy {
-        RecordRecyclerViewAdapter(this, recordModels)
+        RecordRecyclerViewAdapter(this, filteredItems)
+    }
+
+    private val spinner: Spinner by lazy {
+        findViewById(R.id.code_dropdown)
     }
 
     private val comparator = Comparator<RecordModel> { recordModel1, recordModel2 ->
@@ -52,8 +58,27 @@ class MainActivity : AppCompatActivity() {
         val codebookButton: Button = findViewById(R.id.codebook_button)
         codebookButton.setOnClickListener { view ->
             val intent = Intent(this, CodebookActivity::class.java)
-            startActivity(intent)
+            startActivityForResult(intent, 2)
         }
+
+        val options = getCodes().toTypedArray()
+        val spinnerAdapter = ArrayAdapter(this, R.layout.spinner_item, options)
+        spinner.adapter = spinnerAdapter
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedFilter = parent?.getItemAtPosition(position) as String
+                filteredItems.clear()
+                filteredItems.addAll(recordModels.filter {
+                    if(selectedFilter != "...") it.name == selectedFilter
+                    else true
+                }.toMutableList())
+                adapter.notifyDataSetChanged()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+        }
+
     }
 
     private fun setUpRecordModels() {
@@ -67,6 +92,7 @@ class MainActivity : AppCompatActivity() {
             RecordModel(it.nameWithoutExtension.substringBefore('-'), Files.readAttributes(it.toPath(), BasicFileAttributes::class.java).creationTime(), it.path)
         }.toMutableList()
         recordModels.sortWith(comparator)
+        filteredItems = recordModels.toMutableList()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -81,7 +107,42 @@ class MainActivity : AppCompatActivity() {
 
             recordModels.add(RecordModel(fileName, Files.readAttributes(newFile.toPath(), BasicFileAttributes::class.java).creationTime(), newFile.path))
             recordModels.sortWith(comparator)
-            adapter.notifyItemInserted(recordModels.indexOfFirst { it.path == newFile.path })
+            filteredItems.clear()
+            filteredItems.addAll(recordModels.toMutableList())
+
+            val options = getCodes().toTypedArray()
+            if(options[spinner.selectedItemPosition] == "..." || options[spinner.selectedItemPosition] == newFile.name)
+            {
+                adapter.notifyItemInserted(filteredItems.indexOfFirst { it.path == newFile.path })
+                recyclerView.smoothScrollToPosition(0)
+            }
+        } else if(requestCode == 2) {
+            val options = getCodes().toTypedArray()
+            val spinnerAdapter = ArrayAdapter(this, R.layout.spinner_item, options)
+            spinner.adapter = spinnerAdapter
+            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    val selectedFilter = parent?.getItemAtPosition(position) as String
+                    filteredItems.clear()
+                    filteredItems.addAll(recordModels.filter {
+                        if(selectedFilter != "...") it.name == selectedFilter
+                        else true
+                    }.toMutableList())
+                    adapter.notifyDataSetChanged()
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                }
+            }
         }
+    }
+
+    private fun getCodes(): List<String> {
+
+        val codebookFile = File(applicationContext.filesDir.toString() + "/codebook.txt")
+
+        val codes = codebookFile.readLines().sorted().toMutableList()
+        codes.add(0, "...")
+        return codes
     }
 }

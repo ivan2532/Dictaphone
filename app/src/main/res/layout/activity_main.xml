@@ -4,14 +4,52 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
     tools:context=".MainActivity">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:id="@+id/topLayout">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="10dp"
+            >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="15dp"
+                android:text="Code filter"
+                android:textSize="16sp"
+                android:textAlignment="textStart"
+                />
+
+            <Spinner
+                android:id="@+id/code_dropdown"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/bottomLayout"
+        android:layout_below="@id/topLayout"
+        android:id="@+id/middleLayout">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recordingsRecyclerView"
         android:layout_width="409dp"
         android:layout_height="729dp"
-        android:layout_above="@id/bottomLayout"
         />
 
     <ImageView
@@ -21,6 +59,8 @@
         android:layout_alignEnd="@id/recordingsRecyclerView"
         android:layout_alignBottom="@id/recordingsRecyclerView"
         android:src="@drawable/baseline_add_circle_24" />
+
+    </RelativeLayout>
 
     <RelativeLayout
         android:layout_width="match_parent"
